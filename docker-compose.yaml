@@ -61,6 +61,7 @@ x-db-depend: &db-depend
 services:
   init-clickhouse:
     <<: *common
+    exclude_from_hc: true
     build:
       context: .
       dockerfile: dockerfiles/init-clickhouse.Dockerfile
@@ -149,6 +150,7 @@ services:
         condition: service_healthy
   schema-migrator-sync:
     <<: *common
+    exclude_from_hc: true
     image: signoz/signoz-schema-migrator:v0.142.0
     command:
       - sync
@@ -160,6 +162,7 @@ services:
     restart: on-failure
   schema-migrator-async:
     <<: *db-depend
+    exclude_from_hc: true
     image: signoz/signoz-schema-migrator:v0.142.0
     command:
       - async
