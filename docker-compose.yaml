@@ -9,7 +9,6 @@ x-common: &common
       max-file: "3"
 x-clickhouse-defaults: &clickhouse-defaults
   <<: *common
-  image: clickhouse/clickhouse-server:25.5.6
   tty: true
   labels:
     signoz.io/scrape: "true"
@@ -62,8 +61,9 @@ x-db-depend: &db-depend
 services:
   init-clickhouse:
     <<: *common
-    image: clickhouse/clickhouse-server:25.5.6
-    container_name: signoz-init-clickhouse
+    build:
+      context: .
+      dockerfile: dockerfiles/init-clickhouse.Dockerfile
     command:
       - bash
       - -c
@@ -78,10 +78,9 @@ services:
         mv histogram-quantile /var/lib/clickhouse/user_scripts/histogramQuantile
     restart: on-failure
     volumes:
-      - ./configs/clickhouse-user-scripts:/var/lib/clickhouse/user_scripts/
+      - clickhouse-user-scripts:/var/lib/clickhouse/user_scripts/
   zookeeper-1:
     <<: *zookeeper-defaults
-    container_name: signoz-zookeeper-1
     volumes:
       - zookeeper-1:/bitnami/zookeeper
     environment:
@@ -92,21 +91,23 @@ services:
       - ZOO_PROMETHEUS_METRICS_PORT_NUMBER=9141
   clickhouse:
     <<: *clickhouse-defaults
-    container_name: signoz-clickhouse
+    build:
+      context: .
+      dockerfile: dockerfiles/clickhouse.Dockerfile
+    hostname: clickhouse
     volumes:
-      - ./configs/clickhouse-server:/etc/clickhouse-server
-      - ./configs/clickhouse-user-scripts:/var/lib/clickhouse/user_scripts/
+      - clickhouse-user-scripts:/var/lib/clickhouse/user_scripts/
       - clickhouse:/var/lib/clickhouse/
   signoz:
     <<: *db-depend
-    image: signoz/signoz:v0.112.0
-    container_name: signoz
+    build:
+      context: .
+      dockerfile: dockerfiles/signoz.Dockerfile
     command:
       - --config=/root/config/prometheus.yml
     ports:
       - "8082:8080"
     volumes:
-      - ./configs/signoz:/root/config
       - sqlite:/var/lib/signoz/
     environment:
       - SIGNOZ_ALERTMANAGER_PROVIDER=signoz
@@ -130,14 +131,13 @@ services:
       retries: 3
   otel-collector:
     <<: *db-depend
-    image: signoz/signoz-otel-collector:v0.142.0
-    container_name: signoz-otel-collector
+    build:
+      context: .
+      dockerfile: dockerfiles/otel-collector.Dockerfile
     command:
-      - --config=/etc/otel/otel-collector-config.yaml
-      - --manager-config=/etc/otel/manager-config.yaml
+      - --config=/etc/otel-collector-config.yaml
+      - --manager-config=/etc/manager-config.yaml
       - --copy-path=/var/tmp/collector-config.yaml
-    volumes:
-      - ./configs/otel:/etc/otel
     environment:
       - OTEL_RESOURCE_ATTRIBUTES=host.name=signoz-host,os.type=linux
       - LOW_CARDINAL_EXCEPTION_GROUPING=false
@@ -150,7 +150,6 @@ services:
   schema-migrator-sync:
     <<: *common
     image: signoz/signoz-schema-migrator:v0.142.0
-    container_name: schema-migrator-sync
     command:
       - sync
       - --dsn=tcp://clickhouse:9000
@@ -162,7 +161,6 @@ services:
   schema-migrator-async:
     <<: *db-depend
     image: signoz/signoz-schema-migrator:v0.142.0
-    container_name: schema-migrator-async
     command:
       - async
       - --dsn=tcp://clickhouse:9000
@@ -174,3 +172,4 @@ volumes:
   clickhouse:
   sqlite:
   zookeeper-1:
+  clickhouse-user-scripts:
