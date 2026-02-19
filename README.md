@@ -37,20 +37,24 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://<your-server-ip>:4317
 
 ## Configuration
 
-Config files live in `common/` and are bind-mounted into containers:
+Config files live in `configs/` and are directory-mounted into containers (Coolify does not support file-level bind mounts):
 
 ```
-common/
-├── clickhouse/
-│   ├── config.xml          # ClickHouse server config
-│   ├── users.xml           # ClickHouse users and ACL
-│   ├── custom-function.xml # histogramQuantile UDF
-│   ├── cluster.xml         # ZooKeeper + cluster topology
-│   └── user_scripts/       # Downloaded at startup by init-clickhouse
-├── signoz/
-│   ├── prometheus.yml                  # SigNoz Prometheus config
-│   └── otel-collector-opamp-config.yaml # OpAMP endpoint
-└── dashboards/             # Custom dashboards (optional)
+configs/
+├── clickhouse-server/          # -> /etc/clickhouse-server
+│   ├── config.xml
+│   ├── users.xml
+│   ├── custom-function.xml
+│   ├── config.d/
+│   │   └── cluster.xml
+│   └── users.d/
+├── clickhouse-user-scripts/    # -> /var/lib/clickhouse/user_scripts
+├── signoz/                     # -> /root/config
+│   ├── prometheus.yml
+│   └── dashboards/
+└── otel/                       # -> /etc/otel
+    ├── otel-collector-config.yaml
+    └── manager-config.yaml
 ```
 
 ## Based On
@@ -58,6 +62,7 @@ common/
 Official SigNoz Docker Compose from [SigNoz/signoz](https://github.com/SigNoz/signoz) (`deploy/docker/docker-compose.yaml`), adapted for Coolify compatibility:
 
 - Removed `!!merge` YAML tags (unsupported by Coolify's parser)
-- Changed `../common/` to `./common/` (Coolify isolates service directories)
+- Used directory mounts instead of file mounts (Coolify creates missing file mounts as directories)
+- Removed explicit `name:` from networks/volumes (avoids conflicts with Coolify's project scoping)
 - Hardcoded image versions instead of env var defaults
 - Removed Docker Swarm-specific features (`configs`, `deploy`, Go templates)

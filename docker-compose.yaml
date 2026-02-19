@@ -78,7 +78,7 @@ services:
         mv histogram-quantile /var/lib/clickhouse/user_scripts/histogramQuantile
     restart: on-failure
     volumes:
-      - ./common/clickhouse/user_scripts:/var/lib/clickhouse/user_scripts/
+      - ./configs/clickhouse-user-scripts:/var/lib/clickhouse/user_scripts/
   zookeeper-1:
     <<: *zookeeper-defaults
     container_name: signoz-zookeeper-1
@@ -94,11 +94,8 @@ services:
     <<: *clickhouse-defaults
     container_name: signoz-clickhouse
     volumes:
-      - ./common/clickhouse/config.xml:/etc/clickhouse-server/config.xml
-      - ./common/clickhouse/users.xml:/etc/clickhouse-server/users.xml
-      - ./common/clickhouse/custom-function.xml:/etc/clickhouse-server/custom-function.xml
-      - ./common/clickhouse/user_scripts:/var/lib/clickhouse/user_scripts/
-      - ./common/clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./configs/clickhouse-server:/etc/clickhouse-server
+      - ./configs/clickhouse-user-scripts:/var/lib/clickhouse/user_scripts/
       - clickhouse:/var/lib/clickhouse/
   signoz:
     <<: *db-depend
@@ -109,8 +106,7 @@ services:
     ports:
       - "8082:8080"
     volumes:
-      - ./common/signoz/prometheus.yml:/root/config/prometheus.yml
-      - ./common/dashboards:/root/config/dashboards
+      - ./configs/signoz:/root/config
       - sqlite:/var/lib/signoz/
     environment:
       - SIGNOZ_ALERTMANAGER_PROVIDER=signoz
@@ -137,12 +133,11 @@ services:
     image: signoz/signoz-otel-collector:v0.142.0
     container_name: signoz-otel-collector
     command:
-      - --config=/etc/otel-collector-config.yaml
-      - --manager-config=/etc/manager-config.yaml
+      - --config=/etc/otel/otel-collector-config.yaml
+      - --manager-config=/etc/otel/manager-config.yaml
       - --copy-path=/var/tmp/collector-config.yaml
     volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
-      - ./common/signoz/otel-collector-opamp-config.yaml:/etc/manager-config.yaml
+      - ./configs/otel:/etc/otel
     environment:
       - OTEL_RESOURCE_ATTRIBUTES=host.name=signoz-host,os.type=linux
       - LOW_CARDINAL_EXCEPTION_GROUPING=false
@@ -175,11 +170,7 @@ services:
     restart: on-failure
 networks:
   signoz-net:
-    name: signoz-net
 volumes:
   clickhouse:
-    name: signoz-clickhouse
   sqlite:
-    name: signoz-sqlite
   zookeeper-1:
-    name: signoz-zookeeper-1
