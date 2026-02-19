@@ -132,6 +132,7 @@ services:
       retries: 3
   otel-collector:
     <<: *db-depend
+    exclude_from_hc: true
     build:
       context: .
       dockerfile: dockerfiles/otel-collector.Dockerfile
@@ -139,16 +140,6 @@ services:
       - --config=/etc/otel-collector-config.yaml
       - --manager-config=/etc/manager-config.yaml
       - --copy-path=/var/tmp/collector-config.yaml
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --spider
-        - -q
-        - localhost:13133
-      interval: 30s
-      timeout: 5s
-      retries: 3
     environment:
       - OTEL_RESOURCE_ATTRIBUTES=host.name=signoz-host,os.type=linux
       - LOW_CARDINAL_EXCEPTION_GROUPING=false
