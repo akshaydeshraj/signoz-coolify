@@ -107,7 +107,7 @@ services:
     command:
       - --config=/root/config/prometheus.yml
     ports:
-      - "8082:8080"
+      - "${BIND_ADDR:-0.0.0.0}:8082:8080"
     volumes:
       - sqlite:/var/lib/signoz/
     environment:
@@ -144,8 +144,8 @@ services:
       - OTEL_RESOURCE_ATTRIBUTES=host.name=signoz-host,os.type=linux
       - LOW_CARDINAL_EXCEPTION_GROUPING=false
     ports:
-      - "4317:4317"
-      - "4318:4318"
+      - "${BIND_ADDR:-0.0.0.0}:4317:4317"
+      - "${BIND_ADDR:-0.0.0.0}:4318:4318"
     depends_on:
       signoz:
         condition: service_healthy
