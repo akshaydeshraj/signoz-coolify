@@ -12,6 +12,39 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+  hostmetrics:
+    collection_interval: 30s
+    root_path: /hostfs
+    scrapers:
+      cpu: {}
+      load: {}
+      memory: {}
+      disk: {}
+      filesystem:
+        exclude_mount_points:
+          mount_points: ["/proc/*", "/sys/*", "/dev/*", "/run/*", "/snap/*"]
+          match_type: regexp
+      network: {}
+      paging: {}
+      processes: {}
+  docker_stats:
+    endpoint: unix:///var/run/docker.sock
+    collection_interval: 30s
+    timeout: 20s
+    api_version: "1.47"
+    metrics:
+      container.cpu.usage.total:
+        enabled: true
+      container.memory.usage.total:
+        enabled: true
+      container.memory.usage.limit:
+        enabled: true
+      container.network.io.usage.rx_bytes:
+        enabled: true
+      container.network.io.usage.tx_bytes:
+        enabled: true
+      container.blockio.io_service_bytes_recursive:
+        enabled: true
   prometheus:
     config:
       global:
@@ -106,6 +139,14 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [clickhouselogsexporter, signozmeter]
+    metrics/hostmetrics:
+      receivers: [hostmetrics]
+      processors: [resourcedetection, batch]
+      exporters: [signozclickhousemetrics, signozmeter]
+    metrics/docker:
+      receivers: [docker_stats]
+      processors: [resourcedetection, batch]
+      exporters: [signozclickhousemetrics, signozmeter]
     metrics/meter:
       receivers: [signozmeter]
       processors: [batch/meter]

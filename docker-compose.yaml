@@ -133,6 +133,8 @@ services:
   otel-collector:
     <<: *db-depend
     exclude_from_hc: true
+    user: root
+    privileged: true
     build:
       context: .
       dockerfile: dockerfiles/otel-collector.Dockerfile
@@ -140,9 +142,20 @@ services:
       - --config=/etc/otel-collector-config.yaml
       - --manager-config=/etc/manager-config.yaml
       - --copy-path=/var/tmp/collector-config.yaml
+    volumes:
+      - /proc:/hostfs/proc:ro
+      - /sys:/hostfs/sys:ro
+      - /:/hostfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - OTEL_RESOURCE_ATTRIBUTES=host.name=signoz-host,os.type=linux
       - LOW_CARDINAL_EXCEPTION_GROUPING=false
+      - HOST_PROC=/hostfs/proc
+      - HOST_SYS=/hostfs/sys
+      - HOST_ETC=/hostfs/etc
+      - HOST_VAR=/hostfs/var
+      - HOST_RUN=/hostfs/run
+      - HOST_DEV=/hostfs/dev
     ports:
       - "${BIND_ADDR:-0.0.0.0}:4317:4317"
       - "${BIND_ADDR:-0.0.0.0}:4318:4318"
