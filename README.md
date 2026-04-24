@@ -1,5 +1,7 @@
 # SigNoz on Coolify
 
+**EDIT (24th April, 2026): This repository has been archived. Coolify now has a native setup for signoz which should be used https://coolify.io/docs/services/signoz**
+
 Deploy [SigNoz](https://signoz.io) (open-source observability platform) on [Coolify](https://coolify.io) using Docker Compose.
 
 ## Architecture
